@@ -78,37 +78,30 @@ function App() {
         <button
           onClick={handleOnClick}
           name="no-more-clickbait"
-          className={`flex-1 text-black py-3 px-4 rounded ${
-            selectedOption === "no-more-clickbait" ? "bg-gray-200" : ""
-          }`}
+          className={`flex-1 text-black py-3 px-4 rounded`}
         >
           No More Clickbait
         </button>
         <button
           onClick={handleOnClick}
           name="even-more-clickbait"
-          className={`flex-1 text-black py-3 px-4 rounded ${
-            selectedOption === "even-more-clickbait" ? "bg-gray-200" : ""
-          }`}
+          className={`flex-1 text-black py-3 px-4 rounded`}
         >
           Even More Clickbait
         </button>
         <button
           onClick={handleOnClick}
           name="just-for-laughs"
-          className={`flex-1 text-black py-3 px-4 rounded ${
-            selectedOption === "just-for-laughs" ? "bg-gray-200" : ""
-          }`}
+          className={`flex-1 text-black py-3 px-4 rounded`}
         >
           Just For Laughs
         </button>
       </div>
       <p className="footer">
-        No More Clickbait is a browser extension designed to enhance your online
-        reading experience by combating clickbait headlines. By simply hovering
-        over a headline, you can instantly see a rewritten version that aims to
-        be more informative and less manipulative, helping you make more
-        informed decisions about what content to engage with.
+        "No More Clickbait is a browser extension that rewrites clickbait
+        headlines to be more informative and transparent. Hover over a headline
+        to instantly see a more accurate version, helping you choose content
+        more wisely."
       </p>
     </>
   );
