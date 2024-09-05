@@ -12,7 +12,7 @@
     "default_popup": "popup.html",
     "default_icon": "images/icon48.png"
   },
-  "permissions": ["activeTab", "scripting", "alarms"],
+  "permissions": ["activeTab", "scripting", "alarms", "storage"],
   "host_permissions": [
     "*://*/*",
     "https://no-more-clickbait-project.onrender.com/"
