@@ -1,8 +1,36 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 
 function App() {
-  const [selectedOption, setSelectedOption] = useState(""); // Single state for managing selected option
+  const [selectedOption, setSelectedOption] = useState("");
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Effect to add or remove the 'dark-mode' class
+  useEffect(() => {
+    if (isDarkMode) {
+      document.body.classList.add("dark-mode");
+      document.querySelectorAll("button").forEach((button) => {
+        button.classList.add("dark-mode");
+        document.querySelector("h1").classList.add("dark-mode");
+      });
+    } else {
+      document.body.classList.remove("dark-mode");
+      document.querySelectorAll("button").forEach((button) => {
+        button.classList.remove("dark-mode");
+        document.querySelector("h1").classList.remove("dark-mode");
+      });
+    }
+
+    // Cleanup function to remove the class when the component unmounts
+    return () => {
+      document.body.classList.remove("dark-mode");
+    };
+  }, [isDarkMode]);
+
+  // Toggle the dark mode state
+  const handleToggle = () => {
+    setIsDarkMode((prevMode) => !prevMode);
+  };
 
   const mainHeader = () => {
     switch (selectedOption) {
@@ -32,6 +60,13 @@ function App() {
   return (
     <>
       <div className="flex flex-col items-center space-y-4">
+        <input
+          type="checkbox"
+          id="darkmoade-toggle"
+          checked={isDarkMode}
+          onChange={handleToggle}
+        ></input>
+        <label htmlFor="darkmoade-toggle"></label>
         <img
           src="../dist/images/no-more-clickbait-logo.png"
           className="w-80"
@@ -65,14 +100,15 @@ function App() {
             selectedOption === "just-for-laughs" ? "bg-gray-200" : ""
           }`}
         >
-          Just for laughs
+          Just For Laughs
         </button>
       </div>
-      <p>
-        Edit <code>src/App.jsx</code> and save to test HMR
-      </p>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
+      <p className="footer">
+        No More Clickbait is a browser extension designed to enhance your online
+        reading experience by combating clickbait headlines. By simply hovering
+        over a headline, you can instantly see a rewritten version that aims to
+        be more informative and less manipulative, helping you make more
+        informed decisions about what content to engage with.
       </p>
     </>
   );
