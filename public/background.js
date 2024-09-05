@@ -1,21 +1,39 @@
-chrome.runtime.onInstalled.addListener(() => {
-  console.log("Extension Installed");
+// Function to send a POST request to the server
+async function fetchLessClickbaityHeadline(headline) {
+  try {
+    const response = await fetch(
+      "https://no-more-clickbait-project.onrender.com/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ headline: headline }),
+        mode: "cors",
+      }
+    );
 
-  // Example: Set up an alarm to trigger every minute
-  chrome.alarms.create("refreshData", { periodInMinutes: 1 });
-});
-
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === "refreshData") {
-    console.log("Alarm triggered: Fetching data...");
-    // Perform a background task, such as fetching data from an API
+    if (response.ok) {
+      const data = await response.json();
+      return data.content;
+    } else {
+      throw new Error("Failed to fetch new headline: " + response.statusText);
+    }
+  } catch (error) {
+    console.error("Error fetching new headline:", error);
+    return "Error fetching new headline";
   }
-});
+}
 
-// Example of listening to messages from content scripts
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === "GREETING") {
-    console.log("Message received from content script:", message.payload);
-    sendResponse({ message: "Hello from background!" });
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.action == "fetchHeadline") {
+    fetchLessClickbaityHeadline(request.headline)
+      .then((newHeadline) => {
+        sendResponse({ newHeadline: newHeadline });
+      })
+      .catch((error) => {
+        sendResponse({ newHeadline: "Error: Could not fetch new headline" });
+      });
+    return true; // Indicates that the response is sent asynchronously
   }
 });
