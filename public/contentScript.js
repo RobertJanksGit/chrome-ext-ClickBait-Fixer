@@ -1,16 +1,17 @@
 // Function to create and display a hover widget with a new headline
 function createHoverWidget() {
   const widget = document.createElement("div");
-  widget.id = "headlineHoverWidget"; // Unique ID for styling and reference
+  widget.id = "headlineHoverWidget";
   widget.style.position = "absolute";
   widget.style.padding = "10px 20px";
   widget.style.backgroundColor = "#fff";
   widget.style.border = "2px solid #ccc";
   widget.style.borderRadius = "8px";
   widget.style.boxShadow = "0 4px 16px rgba(0, 0, 0, 0.2)";
-  widget.style.zIndex = "1000"; // Ensure it appears above other content
-  widget.style.display = "none"; // Start hidden
-  widget.style.display = "18px";
+  widget.style.zIndex = "1000";
+  widget.style.display = "none";
+  widget.style.fontSize = "32px";
+  widget.setAttribute("role", "tooltip");
 
   // Append the widget to the body
   document.body.appendChild(widget);
@@ -21,54 +22,105 @@ function createHoverWidget() {
 // Initialize the hover widget
 const hoverWidget = createHoverWidget();
 
-// Function to handle mouseover event on headlines or spans
-async function showHoverWidget(event) {
-  // Determine the correct target element to display the widget
-  let target = event.target;
+// Function to position the widget within the viewport bounds
+function positionWidget(x, y) {
+  const widgetRect = hoverWidget.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
 
-  // If the hovered element is within a headline or span, find the closest headline or span parent
-  if (target.closest("h1, h2, h3, span")) {
-    target = target.closest("h1, h2, h3, span");
-  } else {
-    return; // If not a headline or span, do nothing
+  // Offset to avoid cursor overlap
+  let left = x + 20;
+  let top = y + 20;
+
+  // Adjust left to prevent overflow to the right
+  if (left + widgetRect.width > viewportWidth) {
+    left = viewportWidth - widgetRect.width - 10;
+  }
+  // Adjust top to prevent overflow to the bottom
+  if (top + widgetRect.height > viewportHeight) {
+    top = viewportHeight - widgetRect.height - 10;
   }
 
-  let headlineText = target.textContent;
+  // Adjust top if it's near the top edge to avoid hiding the widget
+  if (top < 0) {
+    top = 10;
+  }
+
+  // Adjust left if it's near the left edge to avoid hiding the widget
+  if (left < 0) {
+    left = 10;
+  }
+
+  hoverWidget.style.left = `${left}px`;
+  hoverWidget.style.top = `${top}px`;
+}
+
+// Function to handle mouseover event on headlines or spans, even if nested
+async function showHoverWidget(event) {
+  // Adjusted to find a headline even if it's nested within an anchor tag or other containers
+  let target = event.target.closest("h1, h2, h3, span, a"); // Also includes <a> tags
+
+  if (!target) return; // If not a headline or link, do nothing
+
+  // If the target is an <a> tag, look for a nested headline
+  if (target.tagName.toLowerCase() === "a") {
+    target = target.querySelector("h1, h2, h3, span");
+  }
+
+  // If still no target or the closest isn't a headline, do nothing
+  if (!target) return;
+
+  let headlineText = target.textContent.trim();
+
+  // Set the widget to loading state before sending request
+  hoverWidget.textContent = "Loading..."; // Loading text or spinner can be used
 
   chrome.runtime.sendMessage(
     { action: "fetchHeadline", headline: headlineText },
     function (response) {
+      if (chrome.runtime.lastError || !response) {
+        hoverWidget.textContent = "Error fetching headline"; // Error handling
+        return;
+      }
       // Handle the response here, update your widget with the new headline
       hoverWidget.textContent = response.newHeadline;
     }
   );
 
-  // Get the original text or store it if not already stored
+  // Store the original text if not already stored
   if (!target.dataset.originalText) {
     target.dataset.originalText = target.textContent;
   }
 
-  // Set the widget to loading state
-  hoverWidget.textContent = "Loading..."; // Loading text or spinner can be used
-
   // Show the widget and position it near the cursor
   hoverWidget.style.display = "block";
-  hoverWidget.style.left = `${event.pageX + 10}px`; // Offset to avoid cursor overlap
-  hoverWidget.style.top = `${event.pageY + 10}px`; // Offset to avoid cursor overlap
+  positionWidget(event.pageX, event.pageY); // Adjusted function call to handle edge cases
+}
+
+// Throttle function to improve performance on mousemove events
+function throttle(func, delay) {
+  let lastCall = 0;
+  return function (...args) {
+    const now = new Date().getTime();
+    if (now - lastCall < delay) {
+      return;
+    }
+    lastCall = now;
+    return func(...args);
+  };
 }
 
 // Function to handle mousemove event for positioning the widget
-function moveHoverWidget(event) {
+const moveHoverWidget = throttle((event) => {
   if (hoverWidget.style.display === "block") {
-    hoverWidget.style.left = `${event.pageX + 10}px`; // Update position based on cursor
-    hoverWidget.style.top = `${event.pageY + 10}px`;
+    positionWidget(event.pageX, event.pageY);
   }
-}
+}, 50);
 
 // Function to handle mouseout event to hide the widget
 function hideHoverWidget(event) {
   if (event.target.closest("h1, h2, h3, span")) {
-    hoverWidget.style.display = "none"; // Hide the widget when not hovering
+    hoverWidget.style.display = "none";
   }
 }
 

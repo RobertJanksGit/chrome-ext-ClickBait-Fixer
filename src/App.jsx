@@ -5,6 +5,36 @@ function App() {
   const [selectedOption, setSelectedOption] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  useEffect(() => {
+    // Load saved state from chrome storage
+    chrome.storage.local.get(
+      ["isDarkMode", "selectedOption"],
+      function (result) {
+        if (result.isDarkMode !== undefined) {
+          setIsDarkMode(result.isDarkMode);
+        }
+        if (result.selectedOption) {
+          setSelectedOption(result.selectedOption);
+        }
+      }
+    );
+
+    // Cleanup function to remove the class when the component unmounts
+    return () => {
+      document.body.classList.remove("dark-mode");
+    };
+  }, []);
+
+  useEffect(() => {
+    // Save dark mode state to chrome storage
+    chrome.storage.local.set({ isDarkMode: isDarkMode });
+  }, [isDarkMode]);
+
+  useEffect(() => {
+    // Save selected option to chrome storage
+    chrome.storage.local.set({ selectedOption: selectedOption });
+  }, [selectedOption]);
+
   // Effect to add or remove the 'dark-mode' class
   useEffect(() => {
     if (isDarkMode) {
@@ -66,7 +96,7 @@ function App() {
           checked={isDarkMode}
           onChange={handleToggle}
         ></input>
-        <label htmlFor="darkmoade-toggle"></label>
+        <label htmlFor="darkmoade-toggle" aria-label="Toggle dark mode"></label>
         <img
           src="../dist/images/no-more-clickbait-logo.png"
           className="w-80"
