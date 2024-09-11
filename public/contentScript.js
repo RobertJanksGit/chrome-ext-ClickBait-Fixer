@@ -1,3 +1,31 @@
+let isEnabled = true;
+
+// Listen for messages from background script to toggle functionality
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "toggleExtension") {
+    isEnabled = message.isEnabled;
+    if (!isEnabled) {
+      // Stop all functionalities
+      console.log("Extension is disabled.");
+      return;
+      // Remove event listeners
+      document.removeEventListener("mouseover", showHoverWidget);
+      document.removeEventListener("mousemove", moveHoverWidget);
+      document.removeEventListener("mouseout", hideHoverWidget);
+      document.body.removeChild(hoverWidget);
+      // Hide the hover widget if it's visible
+      hoverWidget.style.display = "none";
+    } else {
+      // Re-enable all functionalities
+      console.log("Extension is enabled.");
+      document.addEventListener("mouseover", showHoverWidget);
+      document.addEventListener("mousemove", moveHoverWidget);
+      document.addEventListener("mouseout", hideHoverWidget);
+    }
+    sendResponse({ success: true });
+  }
+});
+
 // Function to create and display a hover widget with a new headline
 function createHoverWidget() {
   const widget = document.createElement("div");
@@ -32,31 +60,13 @@ function positionWidget(x, y) {
   let left = x + 20;
   let top = y + 20;
 
-  // Adjust left to prevent overflow to the right
-  if (left + widgetRect.width > viewportWidth) {
-    left = viewportWidth - widgetRect.width - 10;
-  }
-  // Adjust top to prevent overflow to the bottom
-  if (top + widgetRect.height > viewportHeight) {
-    top = viewportHeight - widgetRect.height - 10;
-  }
-
-  // Adjust top if it's near the top edge to avoid hiding the widget
-  if (top < 0) {
-    top = 10;
-  }
-
-  // Adjust left if it's near the left edge to avoid hiding the widget
-  if (left < 0) {
-    left = 10;
-  }
-
   hoverWidget.style.left = `${left}px`;
   hoverWidget.style.top = `${top}px`;
 }
 
 // Function to handle mouseover event on headlines or spans, even if nested
 async function showHoverWidget(event) {
+  if (!isEnabled) return;
   // Adjusted to find a headline even if it's nested within an anchor tag or other containers
   let target = event.target.closest("h1, h2, h3, span, a"); // Also includes <a> tags
 
@@ -112,6 +122,7 @@ function throttle(func, delay) {
 
 // Function to handle mousemove event for positioning the widget
 const moveHoverWidget = throttle((event) => {
+  if (!isEnabled) return;
   if (hoverWidget.style.display === "block") {
     positionWidget(event.pageX, event.pageY);
   }
@@ -119,15 +130,11 @@ const moveHoverWidget = throttle((event) => {
 
 // Function to handle mouseout event to hide the widget
 function hideHoverWidget(event) {
+  if (!isEnabled) return;
   if (event.target.closest("h1, h2, h3, span")) {
     hoverWidget.style.display = "none";
   }
 }
-
-// Attach event listeners to the document for hover functionality
-document.addEventListener("mouseover", showHoverWidget);
-document.addEventListener("mousemove", moveHoverWidget);
-document.addEventListener("mouseout", hideHoverWidget);
 
 // Function to inject additional CSS styles
 function injectAdditionalStyles() {

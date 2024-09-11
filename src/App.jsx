@@ -1,14 +1,34 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import "./App.css";
+import ToggleButton from "./components/ToggleButton";
 
 function App() {
   const [selectedOption, setSelectedOption] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isEnabled, setIsEnabled] = useState(true);
+
+  // Unified toggle handler
+  const toggleHandler = useCallback((mode) => {
+    switch (mode) {
+      case "dark":
+        setIsDarkMode((prevMode) => !prevMode);
+        break;
+      case "enable":
+        setIsEnabled((prevMode) => {
+          const newMode = !prevMode;
+          chrome.runtime.sendMessage({ action: "enabled", isEnabled: newMode });
+          return newMode;
+        });
+        break;
+      default:
+        break;
+    }
+  }, []);
 
   useEffect(() => {
     // Load saved state from chrome storage
     chrome.storage.local.get(
-      ["isDarkMode", "selectedOption"],
+      ["isDarkMode", "selectedOption", "isEnabled"],
       function (result) {
         if (result.isDarkMode !== undefined) {
           setIsDarkMode(result.isDarkMode);
@@ -16,50 +36,49 @@ function App() {
         if (result.selectedOption) {
           setSelectedOption(result.selectedOption);
         }
+        if (result.isEnabled !== undefined) {
+          setIsEnabled(result.isEnabled);
+        }
       }
     );
 
-    // Cleanup function to remove the class when the component unmounts
+    // Cleanup function for dark mode
     return () => {
       document.body.classList.remove("dark-mode");
     };
   }, []);
 
   useEffect(() => {
-    // Save dark mode state to chrome storage
     chrome.storage.local.set({ isDarkMode: isDarkMode });
-  }, [isDarkMode]);
-
-  useEffect(() => {
-    // Save selected option to chrome storage
-    chrome.storage.local.set({ selectedOption: selectedOption });
-  }, [selectedOption]);
-
-  // Effect to add or remove the 'dark-mode' class
-  useEffect(() => {
     if (isDarkMode) {
       document.body.classList.add("dark-mode");
       document.querySelectorAll("button").forEach((button) => {
         button.classList.add("dark-mode");
-        document.querySelector("h1").classList.add("dark-mode");
       });
     } else {
       document.body.classList.remove("dark-mode");
       document.querySelectorAll("button").forEach((button) => {
         button.classList.remove("dark-mode");
-        document.querySelector("h1").classList.remove("dark-mode");
+        // document.querySelector("h1").classList.remove("dark-mode");
       });
     }
-
-    // Cleanup function to remove the class when the component unmounts
-    return () => {
-      document.body.classList.remove("dark-mode");
-    };
   }, [isDarkMode]);
 
-  // Toggle the dark mode state
-  const handleToggle = () => {
-    setIsDarkMode((prevMode) => !prevMode);
+  useEffect(() => {
+    chrome.storage.local.set({ isEnabled: isEnabled });
+  }, [isEnabled]);
+
+  useEffect(() => {
+    chrome.storage.local.set({ selectedOption: selectedOption });
+  }, [selectedOption]);
+
+  const handleOnClick = (evt) => {
+    const { name } = evt.target;
+    setSelectedOption(name);
+    chrome.runtime.sendMessage(
+      { action: "tacos", selectedOption: name },
+      (response) => {}
+    );
   };
 
   const mainHeader = () => {
@@ -75,36 +94,35 @@ function App() {
     }
   };
 
-  const handleOnClick = (evt) => {
-    // evt.preventDefault();
-    const { name } = evt.target;
-    setSelectedOption(name);
-
-    //Send message to background script
-    chrome.runtime.sendMessage(
-      { action: "tacos", selectedOption: name },
-      (response) => {}
-    );
-  };
-
   return (
     <>
-      <div className="flex flex-col items-center space-y-4">
-        <input
-          type="checkbox"
-          id="darkmoade-toggle"
-          checked={isDarkMode}
-          onChange={handleToggle}
-        ></input>
-        <label htmlFor="darkmoade-toggle" aria-label="Toggle dark mode"></label>
+      <div className="flex flex-col items-center space-y-4 main">
+        <div className="toggleButtons">
+          <div className="center-toggle-text">
+            <span>{`Turn ${!isEnabled ? "ON" : "OFF"}`}</span>
+            <ToggleButton
+              checked={isEnabled}
+              onChange={() => toggleHandler("enable")}
+              label="enable-toggle"
+            />
+          </div>
+          <div className="center-toggle-text">
+            <span>{isDarkMode ? "Dark Mode" : "Light Made"}</span>
+            <ToggleButton
+              checked={isDarkMode}
+              onChange={() => toggleHandler("dark")}
+              label="darkmode-toggle"
+            />
+          </div>
+        </div>
         <img
           src="../dist/images/no-more-clickbait-logo.png"
           className="w-80"
           alt="logo"
         />
       </div>
-      <h1>{mainHeader()}</h1>
-      <div className="card flex space-x-4">
+      <span className="header">{mainHeader()}</span>
+      <div className="card flex space-x-100">
         <button
           onClick={handleOnClick}
           name="no-more-clickbait"
