@@ -26,7 +26,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Function to create and display a hover widget with a new headline
+// Function to create and display a hover widget with a headline and synopsis
 function createHoverWidget() {
   const widget = document.createElement("div");
   widget.id = "headlineHoverWidget";
@@ -38,8 +38,24 @@ function createHoverWidget() {
   widget.style.boxShadow = "0 4px 16px rgba(0, 0, 0, 0.2)";
   widget.style.zIndex = "1000";
   widget.style.display = "none";
-  widget.style.fontSize = "32px";
+  widget.style.fontSize = "16px";
   widget.setAttribute("role", "tooltip");
+
+  // Create headline section
+  const headlineElement = document.createElement("h2");
+  headlineElement.id = "headlineText";
+  headlineElement.style.margin = "0 0 10px 0";
+  headlineElement.style.fontSize = "20px";
+
+  // Create synopsis section
+  const synopsisElement = document.createElement("p");
+  synopsisElement.id = "synopsisText";
+  synopsisElement.style.margin = "0";
+  synopsisElement.style.fontSize = "14px";
+
+  // Append both sections to the widget
+  widget.appendChild(headlineElement);
+  widget.appendChild(synopsisElement);
 
   // Append the widget to the body
   document.body.appendChild(widget);
@@ -67,10 +83,9 @@ function positionWidget(x, y) {
 // Function to handle mouseover event on headlines or spans, even if nested
 async function showHoverWidget(event) {
   if (!isEnabled) return;
-  // Adjusted to find a headline even if it's nested within an anchor tag or other containers
-  let target = event.target.closest("h1, h2, h3, span, a"); // Also includes <a> tags
+  let target = event.target.closest("h1, h2, h3, span, a");
 
-  if (!target) return; // If not a headline or link, do nothing
+  if (!target) return;
 
   // If the target is an <a> tag, look for a nested headline
   if (target.tagName.toLowerCase() === "a") {
@@ -81,9 +96,12 @@ async function showHoverWidget(event) {
   if (!target) return;
 
   let headlineText = target.textContent.trim();
+  let linkHref = event.target.closest("a").href;
+  console.log("Hovered over a link:", linkHref);
 
-  // Set the widget to loading state before sending request
-  hoverWidget.textContent = "Loading..."; // Loading text or spinner can be used
+  // Set the widget to loading state
+  document.getElementById("headlineText").textContent = "Loading headline...";
+  document.getElementById("synopsisText").textContent = "Loading synopsis...";
 
   chrome.runtime.sendMessage(
     { action: "fetchHeadline", headline: headlineText },
@@ -93,7 +111,8 @@ async function showHoverWidget(event) {
         return;
       }
       // Handle the response here, update your widget with the new headline
-      hoverWidget.textContent = response.newHeadline;
+      document.getElementById("headlineText").textContent =
+        response.newHeadline;
     }
   );
 
