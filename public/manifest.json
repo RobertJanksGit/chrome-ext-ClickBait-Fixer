@@ -12,10 +12,19 @@
     "default_popup": "popup.html",
     "default_icon": "images/icon48.png"
   },
-  "permissions": ["activeTab", "scripting", "alarms", "storage"],
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "alarms",
+    "storage",
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
+  ],
   "host_permissions": [
     "*://*/*",
-    "https://no-more-clickbait-project.onrender.com/"
+    "https://no-more-clickbait-project.onrender.com/",
+    "https://article-synopsis.onrender.com"
   ],
   "background": {
     "service_worker": "background.js"

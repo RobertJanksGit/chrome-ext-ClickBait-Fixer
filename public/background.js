@@ -33,6 +33,35 @@ async function fetchLessClickbaityHeadline(headline) {
   }
 }
 
+// Function to send article sever
+async function fetchSynopsisFromAI(articleContent) {
+  let type = await new Promise((resolve) => {
+    chrome.storage.local.get(["type"], function (result) {
+      resolve(result.type);
+    });
+  });
+
+  try {
+    const response = await fetch("https://article-synopsis.onrender.com", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ article: articleContent, type: type }),
+      mode: "cors",
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return data.content;
+    } else {
+      throw new Error("Failed to fetch synopsis: " + response.statusText);
+    }
+  } catch (error) {
+    console.error("Error fetching synopsis from AI:", error);
+    return "Error fetching synopsis";
+  }
+}
+
 // Listener for messages from content script or popup
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === "toggleExtension") {
@@ -71,6 +100,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === "fetchHeadline") {
     fetchLessClickbaityHeadline(request.headline)
       .then((newHeadline) => {
+        console.log(newHeadline);
         sendResponse({ newHeadline: newHeadline });
       })
       .catch((error) => {
@@ -78,6 +108,19 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       });
 
     return true; // Keeps the message channel open for async sendResponse
+  }
+
+  if (request.action === "fetchArticleSynopsis" && request.articleContent) {
+    fetchSynopsisFromAI(request.articleContent)
+      .then((synopsis) => {
+        sendResponse({ synopsis });
+      })
+      .catch((error) => {
+        console.error("Error fetching synopsis from AI:", error);
+        sendResponse({ synopsis: "Error fetching synopsis" });
+      });
+
+    return true; // Indicates async sendResponse
   }
 
   if (request.action === "tacos") {

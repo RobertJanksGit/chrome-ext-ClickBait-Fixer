@@ -80,6 +80,42 @@ function positionWidget(x, y) {
   hoverWidget.style.top = `${top}px`;
 }
 
+// Function to fetch and parse article content in the content script
+async function fetchAndParseArticleContent(url) {
+  try {
+    const response = await fetch(url);
+    const html = await response.text();
+
+    // Parse the HTML using DOMParser (available in the content script)
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    const article = Array.from(doc.querySelectorAll("p"));
+    let articleContent = "No article content found";
+
+    if (article && article.length > 0) {
+      articleContent = article.map((p) => p.innerText).join(" ");
+    }
+
+    // Send the parsed article content to the background script for synopsis generation
+    chrome.runtime.sendMessage(
+      { action: "fetchArticleSynopsis", articleContent: articleContent },
+      function (response) {
+        if (chrome.runtime.lastError || !response) {
+          console.log("Error:", chrome.runtime.lastError);
+          return;
+        }
+
+        // Do something with the returned synopsis (e.g., display in the widget)
+        document.getElementById("synopsisText").textContent = response.synopsis;
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching or parsing article content:", error);
+  }
+}
+
+// Use this function in your existing `showHoverWidget` function to fetch and parse the article
+
 // Function to handle mouseover event on headlines or spans, even if nested
 async function showHoverWidget(event) {
   if (!isEnabled) return;
@@ -103,18 +139,24 @@ async function showHoverWidget(event) {
   document.getElementById("headlineText").textContent = "Loading headline...";
   document.getElementById("synopsisText").textContent = "Loading synopsis...";
 
+  //Send the headline to background script
   chrome.runtime.sendMessage(
     { action: "fetchHeadline", headline: headlineText },
     function (response) {
+      console.log(response, "from cntentScript");
       if (chrome.runtime.lastError || !response) {
-        hoverWidget.textContent = "Error fetching headline"; // Error handling
+        console.log("This is the response:", response);
+        document.getElementById("headlineText").textContent =
+          "Error fetching headline";
         return;
       }
-      // Handle the response here, update your widget with the new headline
+      // update widget with the new headline
       document.getElementById("headlineText").textContent =
         response.newHeadline;
     }
   );
+
+  fetchAndParseArticleContent(linkHref);
 
   // Store the original text if not already stored
   if (!target.dataset.originalText) {
