@@ -1,6 +1,10 @@
 let isEnabled = true;
 let hoverWidget = null;
 let currentTarget = null;
+let showWidgetTimeout;
+let hideWidgetTimeout;
+const delayBeforeShowing = 500;
+const delayBeforeHiding = 300;
 
 // Debounce function to limit how often we update the widget's position
 function debounce(func, wait) {
@@ -137,8 +141,11 @@ async function handleHoverEvent(event) {
   if (!target) {
     // Check if moving away from both widget and headline
     if (currentTarget && !hoverWidget.contains(event.relatedTarget)) {
-      hoverWidget.style.display = "none";
-      currentTarget = null;
+      clearTimeout(showWidgetTimeout);
+      hideWidgetTimeout = setTimeout(() => {
+        hoverWidget.style.display = "none";
+        currentTarget = null;
+      }, delayBeforeHiding);
     }
     return;
   }
@@ -194,9 +201,12 @@ async function handleHoverEvent(event) {
     currentTarget = target;
   }
 
-  // Show the widget and position it near the cursor
-  hoverWidget.style.display = "block";
-  debouncedPositionWidget(event.pageX, event.pageY);
+  //Show the widget with a delay
+  clearTimeout(hideWidgetTimeout);
+  showWidgetTimeout = setTimeout(() => {
+    hoverWidget.style.display = "block";
+    debouncedPositionWidget(event.pageX, event.pageY);
+  }, delayBeforeShowing);
 }
 // Function to initialize the script based on the current state of isEnabled
 function initializeState() {
@@ -204,7 +214,7 @@ function initializeState() {
     isEnabled = result.isEnabled !== undefined ? result.isEnabled : true; // Default to true if undefined
     if (isEnabled) {
       document.addEventListener("mouseover", handleHoverEvent);
-      hoverWidget.style.display = "none"; // Ensure the widget starts hidden
+      hoverWidget.style.display = "none";
     } else {
       document.removeEventListener("mouseover", handleHoverEvent);
     }
