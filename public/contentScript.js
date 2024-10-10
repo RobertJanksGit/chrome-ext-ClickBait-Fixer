@@ -20,52 +20,92 @@ function debounce(func, wait) {
 function createHoverWidget(link = "#") {
   const widget = document.createElement("div");
   widget.id = "headlineHoverWidget";
-  widget.style.position = "absolute";
-  widget.style.padding = "10px 20px";
-  widget.style.backgroundColor = "#fff";
-  widget.style.border = "2px solid #ccc";
-  widget.style.borderRadius = "8px";
-  widget.style.boxShadow = "0 4px 16px rgba(0, 0, 0, 0.2)";
-  widget.style.zIndex = "1000";
-  widget.style.display = "none";
-  widget.style.fontSize = "16px";
-  widget.style.maxWidth = "400px";
-  widget.style.wordWrap = "break-word";
+  widget.style.cssText = `
+    position: absolute;
+    padding: 20px;
+    background-color: #fff;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    display: none;
+    font-size: 16px;
+    max-width: 400px;
+    min-height: 100px;
+    word-wrap: break-word;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  `;
   widget.setAttribute("role", "tooltip");
 
   // Create headline section
   const headlineElement = document.createElement("h2");
   headlineElement.id = "headlineText";
-  headlineElement.style.margin = "0 0 10px 0";
-  headlineElement.style.fontSize = "20px";
+  headlineElement.style.cssText =
+    "margin: 10px 0; font-size: 20px; text-align: center;";
 
   // Create synopsis section
   const synopsisElement = document.createElement("p");
   synopsisElement.id = "synopsisText";
-  synopsisElement.style.margin = "0";
-  synopsisElement.style.fontSize = "14px";
-  synopsisElement.style.maxHeight = "150px";
-  synopsisElement.style.overflowY = "auto";
+  synopsisElement.style.cssText = `
+    margin: 0;
+    font-size: 14px;
+    max-height: 150px;
+    overflow-y: auto;
+  `;
 
   // Create "Visit Article" button
   const visitButton = document.createElement("button");
   visitButton.id = "visit-button";
   visitButton.textContent = "Visit Article";
-  visitButton.style.marginTop = "10px";
-  visitButton.style.padding = "8px 12px";
-  visitButton.style.fontSize = "14px";
-  visitButton.style.backgroundColor = "#007bff";
-  visitButton.style.color = "#fff";
-  visitButton.style.border = "none";
-  visitButton.style.borderRadius = "5px";
-  visitButton.style.cursor = "pointer";
+  visitButton.style.cssText = `
+    margin-top: 10px;
+    padding: 8px 12px;
+    font-size: 14px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    display: none; /* Initially hidden until loading is done */
+  `;
 
-  // Append both sections to the widget
+  // Create loading spinner
+  const loadingSpinner = document.createElement("div");
+  loadingSpinner.className = "loading-spinner";
+  loadingSpinner.innerHTML = "<div></div><div></div><div></div><div></div>";
+  loadingSpinner.style.cssText = `
+    display: none; 
+    width: 48px;
+    height: 48px;
+    margin: 0 auto; 
+    margin-bottom: 10px; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center
+  `;
+
+  // Create loading text
+  const loadingText = document.createElement("p");
+  loadingText.id = "loadingText";
+  loadingText.textContent = "Loading content, please wait...";
+  loadingText.style.cssText = `
+    text-align: center;
+    font-size: 16px;
+    margin-top: 10px;
+    display: none; /* Initially hidden */
+  `;
+
+  // Append everything to the widget
+  widget.appendChild(loadingSpinner);
+  widget.appendChild(loadingText);
   widget.appendChild(headlineElement);
   widget.appendChild(synopsisElement);
   widget.appendChild(visitButton);
 
-  // Append the widget to the body
   document.body.appendChild(widget);
 
   return widget;
@@ -80,21 +120,42 @@ function positionWidget(x, y) {
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
 
-  // Offset to avoid cursor overlap
-  let left = x + 20;
-  let top = y + 20;
+  let left = x;
+  let top = y;
 
   hoverWidget.style.left = `${left}px`;
   hoverWidget.style.top = `${top}px`;
 }
 
-// Function to fetch and parse article content in the content script
+// Function to show loading spinner
+function showLoading() {
+  document.getElementById("headlineText").textContent = "";
+  document.getElementById("synopsisText").textContent = "";
+  document.querySelector(".loading-spinner").style.display = "block";
+  document.getElementById("loadingText").style.display = "block";
+  document.getElementById("visit-button").style.display = "none";
+}
+
+// Function to hide loading spinner
+function hideLoading() {
+  document.querySelector(".loading-spinner").style.display = "none";
+  document.getElementById("loadingText").style.display = "none";
+  document.getElementById("visit-button").style.display = "block";
+}
+
+// Function to show error state
+function showError(message) {
+  hideLoading();
+  document.getElementById("headlineText").textContent = "Error";
+  document.getElementById("synopsisText").textContent = message;
+}
+
+// Function to fetch and parse article content
 async function fetchAndParseArticleContent(url) {
   try {
     const response = await fetch(url);
     const html = await response.text();
 
-    // Parse the HTML using DOMParser (available in the content script)
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
     const article = Array.from(doc.querySelectorAll("p"));
@@ -102,33 +163,34 @@ async function fetchAndParseArticleContent(url) {
 
     if (article && article.length > 0) {
       articleContent = article.map((p) => p.innerText).join(" ");
+
+      return new Promise((resolve) => {
+        chrome.runtime.sendMessage(
+          { action: "fetchArticleSynopsis", articleContent: articleContent },
+          function (response) {
+            if (chrome.runtime.lastError || !response) {
+              resolve("Failed to load article synopsis.");
+            } else {
+              resolve(response.synopsis);
+            }
+          }
+        );
+      });
+    } else {
+      return articleContent;
     }
-
-    // Send the parsed article content to the background script for synopsis generation
-    chrome.runtime.sendMessage(
-      { action: "fetchArticleSynopsis", articleContent: articleContent },
-      function (response) {
-        if (chrome.runtime.lastError || !response) {
-          console.log("Error:", chrome.runtime.lastError);
-          return;
-        }
-
-        // Do something with the returned synopsis (e.g., display in the widget)
-        document.getElementById("synopsisText").textContent = response.synopsis;
-      }
-    );
   } catch (error) {
     console.error("Error fetching or parsing article content:", error);
+    return "Failed to load article content.";
   }
 }
 
 const debouncedPositionWidget = debounce(positionWidget, 100);
 
-// Function to handle hover events
+// Function to handle hover events with sequential loading
 async function handleHoverEvent(event) {
   if (!isEnabled) return;
 
-  // Check if the mouse is over the widget
   if (
     hoverWidget.style.display === "block" &&
     hoverWidget.contains(event.target)
@@ -139,7 +201,6 @@ async function handleHoverEvent(event) {
   let target = event.target.closest("h1, h2, h3, span, a");
 
   if (!target) {
-    // Check if moving away from both widget and headline
     if (currentTarget && !hoverWidget.contains(event.relatedTarget)) {
       clearTimeout(showWidgetTimeout);
       hideWidgetTimeout = setTimeout(() => {
@@ -150,68 +211,84 @@ async function handleHoverEvent(event) {
     return;
   }
 
-  // If the target is an <a> tag, look for a nested headline
   if (target.tagName.toLowerCase() === "a") {
     target = target.querySelector("h1, h2, h3, span");
   }
 
-  // If still no target or the closest isn't a headline, do nothing
   if (!target) return;
 
-  // Only fetch new content if the target has changed
   if (target !== currentTarget) {
     let headlineText = target.textContent.trim();
     let linkElement = event.target.closest("a");
-    let linkHref = linkElement
-      ? linkElement.href
-      : "Unable to fetch article synopsis";
+    let linkHref = linkElement ? linkElement.href : "#";
     console.log("Hovered over a link:", linkHref);
-    document.getElementById("visit-button").onclick = () =>
-      window.open(linkHref, "_blank");
 
-    // Set the widget to loading state
-    document.getElementById("headlineText").textContent = "Loading headline...";
-    document.getElementById("synopsisText").textContent = "Loading synopsis...";
+    // Show loading and the widget
+    showLoading(); // Start loading
+    hoverWidget.style.display = "block"; // Show the widget
+    debouncedPositionWidget(event.pageX, event.pageY); // Position the widget
 
-    // Send the headline to background script
-    chrome.runtime.sendMessage(
-      { action: "fetchHeadline", headline: headlineText },
-      function (response) {
-        console.log(response, "from contentScript");
-        if (chrome.runtime.lastError || !response) {
-          console.log("This is the response:", response);
-          document.getElementById("headlineText").textContent =
-            "Error fetching headline";
-          return;
+    // Use requestAnimationFrame to ensure the UI updates before the fetch
+    requestAnimationFrame(async () => {
+      try {
+        const headlinePromise = new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage(
+            { action: "fetchHeadline", headline: headlineText },
+            function (response) {
+              if (chrome.runtime.lastError || !response) {
+                reject("Failed to fetch headline.");
+              } else {
+                resolve(response.newHeadline);
+              }
+            }
+          );
+        });
+
+        const articleSynopsis = await fetchAndParseArticleContent(linkHref);
+
+        const [newHeadline, synopsis] = await Promise.allSettled([
+          headlinePromise,
+          Promise.resolve(articleSynopsis),
+        ]).then((results) =>
+          results.map((result) =>
+            result.status === "fulfilled" ? result.value : result.reason
+          )
+        );
+
+        if (typeof newHeadline === "string" && typeof synopsis === "string") {
+          document.getElementById("headlineText").textContent = newHeadline;
+          document.getElementById("synopsisText").textContent = synopsis;
+        } else {
+          showError(
+            typeof newHeadline === "string"
+              ? newHeadline
+              : typeof synopsis === "string"
+              ? synopsis
+              : "An error occurred"
+          );
         }
-        // Update widget with the new headline
-        document.getElementById("headlineText").textContent =
-          response.newHeadline;
+      } catch (error) {
+        console.error("Error in hover event:", error);
+        showError("An error occurred while loading content.");
+      } finally {
+        hideLoading(); // Stop loading
       }
-    );
 
-    fetchAndParseArticleContent(linkHref);
-
-    // Store the original text if not already stored
-    if (!target.dataset.originalText) {
-      target.dataset.originalText = target.textContent;
-    }
-
-    // Store the current target
-    currentTarget = target;
+      currentTarget = target;
+    });
   }
 
-  //Show the widget with a delay
   clearTimeout(hideWidgetTimeout);
   showWidgetTimeout = setTimeout(() => {
     hoverWidget.style.display = "block";
     debouncedPositionWidget(event.pageX, event.pageY);
   }, delayBeforeShowing);
 }
+
 // Function to initialize the script based on the current state of isEnabled
 function initializeState() {
   chrome.storage.local.get("isEnabled", function (result) {
-    isEnabled = result.isEnabled !== undefined ? result.isEnabled : true; // Default to true if undefined
+    isEnabled = result.isEnabled !== undefined ? result.isEnabled : true;
     if (isEnabled) {
       document.addEventListener("mouseover", handleHoverEvent);
       hoverWidget.style.display = "none";
@@ -242,14 +319,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 function injectAdditionalStyles() {
   const style = document.createElement("style");
   style.textContent = `
-        #headlineHoverWidget {
-            transition: opacity 0.2s ease; /* Smooth fade-in/fade-out effect */
-            font-size: 18px;
-        }
-        h1:hover, h2:hover, h3:hover, span:hover {
-            cursor: pointer; /* Change cursor to pointer on hover */
-        }
-    `;
+    #headlineHoverWidget {
+      transition: opacity 0.2s ease;
+      font-size: 18px;
+    }
+    h1:hover, h2:hover, h3:hover, span:hover {
+      cursor: pointer;
+    }
+    .loading-spinner > div {
+      box-sizing: border-box;
+      display: block;
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      margin: 6px;
+      border: 2px solid #007bff;
+      border-radius: 50%;
+      animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+      border-color: #007bff transparent transparent transparent;
+    }
+    .loading-spinner > div:nth-child(1) {
+      animation-delay: -0.45s;
+    }
+    .loading-spinner > div:nth-child(2) {
+      animation-delay: -0.3s;
+    }
+    .loading-spinner > div:nth-child(3) {
+      animation-delay: -0.15s;
+    }
+    @keyframes lds-ring {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  `;
   document.head.appendChild(style);
 }
 
