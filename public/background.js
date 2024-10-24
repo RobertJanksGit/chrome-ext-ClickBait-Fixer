@@ -1,5 +1,15 @@
-// Function to send a POST request to the server
+// Cache objects to store API results
+const headlineCache = {};
+const synopsisCache = {};
+
+// Function to send a POST request to the server (memoized version)
 async function fetchLessClickbaityHeadline(headline) {
+  // Check if the headline is already cached
+  if (headlineCache[headline]) {
+    console.log("Returning cached headline:", headlineCache[headline]);
+    return headlineCache[headline];
+  }
+
   let type = await new Promise((resolve) => {
     chrome.storage.local.get(["type"], function (result) {
       resolve(result.type);
@@ -23,6 +33,8 @@ async function fetchLessClickbaityHeadline(headline) {
 
     if (response.ok) {
       const data = await response.json();
+      // Cache the result
+      headlineCache[headline] = data.content;
       return data.content;
     } else {
       throw new Error("Failed to fetch new headline: " + response.statusText);
@@ -33,8 +45,14 @@ async function fetchLessClickbaityHeadline(headline) {
   }
 }
 
-// Function to send article sever
+// Function to send article to server (memoized version)
 async function fetchSynopsisFromAI(articleContent) {
+  // Check if the synopsis is already cached
+  if (synopsisCache[articleContent]) {
+    console.log("Returning cached synopsis:", synopsisCache[articleContent]);
+    return synopsisCache[articleContent];
+  }
+
   let type = await new Promise((resolve) => {
     chrome.storage.local.get(["type"], function (result) {
       resolve(result.type);
@@ -52,6 +70,8 @@ async function fetchSynopsisFromAI(articleContent) {
     });
     if (response.ok) {
       const data = await response.json();
+      // Cache the result
+      synopsisCache[articleContent] = data.content;
       return data.content;
     } else {
       throw new Error("Failed to fetch synopsis: " + response.statusText);
