@@ -1,6 +1,6 @@
 // Cache objects to store API results
-const headlineCache = {};
-const synopsisCache = {};
+let headlineCache = {};
+let synopsisCache = {};
 
 // Function to send a POST request to the server (memoized version)
 async function fetchLessClickbaityHeadline(headline) {
@@ -20,7 +20,7 @@ async function fetchLessClickbaityHeadline(headline) {
 
   try {
     const response = await fetch(
-      "https://no-more-clickbait-project.onrender.com/",
+      "https://no-more-clickbait-headline-ec2830d06dfa.herokuapp.com/",
       {
         method: "POST",
         headers: {
@@ -60,14 +60,17 @@ async function fetchSynopsisFromAI(articleContent) {
   });
 
   try {
-    const response = await fetch("https://article-synopsis.onrender.com", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ article: articleContent, type: type }),
-      mode: "cors",
-    });
+    const response = await fetch(
+      "https://no-more-clickbait-synopsis-2f3bc054b3ed.herokuapp.com/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ article: articleContent, type: type }),
+        mode: "cors",
+      }
+    );
     if (response.ok) {
       const data = await response.json();
       // Cache the result
@@ -145,6 +148,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 
   if (request.action === "tacos") {
     chrome.storage.local.set({ type: request.selectedOption }, function () {
+      headlineCache = {};
+      synopsisCache = {};
       console.log("Selected option set to:", request.selectedOption);
     });
     sendResponse({ success: true });

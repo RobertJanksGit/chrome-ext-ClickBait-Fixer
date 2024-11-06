@@ -70,7 +70,7 @@ function createHoverWidget(link = "#") {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    display: none; /* Initially hidden until loading is done */
+    display: none;
   `;
 
   // Create loading spinner
@@ -275,6 +275,12 @@ async function handleHoverEvent(event) {
       }
 
       currentTarget = target;
+
+      // Add the click handler to the button
+      const visitButton = document.getElementById("visit-button");
+      visitButton.onclick = () => {
+        window.open(linkHref, "_blank"); // Open the link in a new tab
+      };
     });
   }
 
