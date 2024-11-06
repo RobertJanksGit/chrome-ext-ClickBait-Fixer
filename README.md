@@ -14,17 +14,17 @@ The No More Clickbait Chrome extension is designed to enhance online browsing by
 
 ## FEATURES
 
--Headline Rephrasing: Sends original headlines to an AI-based server, returning less clickbaity alternatives for a more refined reading experience.
--Article Synopsis: Generates brief, AI-created summaries of article content to provide context before opening the full page.
--Caching: Caches previously requested headlines and synopses to improve load speed and reduce API calls.
--User Customization: Allows users to set preferences for headline tone using Chrome's local storage.
--Toggle Extension: Users can easily enable or disable the extension on active pages through a seamless UI toggle.
+- Headline Rephrasing: Sends original headlines to an AI-based server, returning less clickbaity alternatives for a more refined reading experience.
+- Article Synopsis: Generates brief, AI-created summaries of article content to provide context before opening the full page.
+- Caching: Caches previously requested headlines and synopses to improve load speed and reduce API calls.
+- User Customization: Allows users to set preferences for headline tone using Chrome's local storage.
+- Toggle Extension: Users can easily enable or disable the extension on active pages through a seamless UI toggle.
 
 ## FEATURES REQUESTED
 
--Expanded User Options: Add additional customization options for tone or formality of headlines.
--Synced Data Across Devices: Use Chrome Sync to allow users to maintain preferences across devices.
--Error Handling: Improve error messages for cases when headline rephrasing or synopsis generation fails due to connectivity or API issues.
+- Expanded User Options: Add additional customization options for tone or formality of headlines.
+- Synced Data Across Devices: Use Chrome Sync to allow users to maintain preferences across devices.
+- Error Handling: Improve error messages for cases when headline rephrasing or synopsis generation fails due to connectivity or API issues.
 
 ## LEARNING UPDATE
 
