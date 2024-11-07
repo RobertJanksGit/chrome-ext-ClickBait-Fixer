@@ -36,14 +36,6 @@ One of the core features of this project was implementing caching for headline a
 
 Working with Chrome APIs and handling background scripts to send and receive messages between content scripts and the background page was an enriching experience. This project deepened my knowledge of asynchronous JavaScript and Chrome extension architecture, enhancing my skills in developing efficient, responsive extension
 
-### Converting Numbers to Words
-
-One of the key features of this project was converting numerical inputs into their spelled-out form on the display. This involved creating a JavaScript function that handles both integer and decimal numbers, and accounts for special cases and edge conditions. This task helped me improve my problem-solving skills and deepen my understanding of JavaScript string manipulation and number handling.
-
-### Dynamic CSS Styling
-
-Another interesting challenge was implementing dynamic CSS styling to flip the calculator display when the number 0.1134 is input, causing it to spell out "hello." This required integrating CSS transformations and JavaScript event handling to achieve the desired effect. This experience enhanced my knowledge of CSS animations and transformations, as well as how to trigger these styles through JavaScript based on specific conditions.
-
 ## REFERENCES
 
 - [Extension React](https://github.com/RobertJanksGit/chrome-ext-ClickBait-Fixer/blob/main/src/App.jsx) - [Extension CSS](https://github.com/RobertJanksGit/chrome-ext-ClickBait-Fixer/blob/main/src/App.css) - [Extension contentScript.js](https://github.com/RobertJanksGit/chrome-ext-ClickBait-Fixer/blob/main/public/contentScript.js) - [Extension background.js](https://github.com/RobertJanksGit/chrome-ext-ClickBait-Fixer/blob/main/public/background.js)
